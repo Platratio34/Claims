@@ -25,6 +25,7 @@ import net.minecraft.inventory.Inventory;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemStack;
 import net.minecraft.registry.Registries;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.Identifier;
@@ -36,6 +37,8 @@ public class BlockEvents {
 
     public static boolean blockBreakEvent(World world, PlayerEntity player, BlockPos pos, BlockState state,
             BlockEntity tile) {
+        if(world.isClient)
+            return true;
         Claim claim = ClaimStorage.getClaim(pos);
         PermissionContainer permissions = ClaimStorage.globalPermissions;
         if (claim != null) {
@@ -45,6 +48,7 @@ public class BlockEvents {
         Claims.LOGGER.info("Checking permission {} (Block)", PLACE_BREAK_PERM);
 
         if (!permissions.hasPerm(PLACE_BREAK_PERM)) {
+            Claims.sendFailMessage((ServerPlayerEntity)player);
             return false;
         }
         
@@ -52,7 +56,10 @@ public class BlockEvents {
     }
     
     public static ActionResult useBlockEvent(PlayerEntity player, World world, Hand hand, BlockHitResult hit) {
+        if(world.isClient)
+            return ActionResult.PASS;
         if (!checkBlockPerm(world, hit.getBlockPos(), player, hand, USE_BLOCK_PERM)) {
+            Claims.sendFailMessage((ServerPlayerEntity)player);
             return ActionResult.FAIL;
         }
 

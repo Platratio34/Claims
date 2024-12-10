@@ -1,7 +1,6 @@
 package com.peter.claims.gui;
 
 import java.util.function.BiConsumer;
-import java.util.function.Consumer;
 
 import net.minecraft.component.DataComponentTypes;
 import net.minecraft.item.Item;

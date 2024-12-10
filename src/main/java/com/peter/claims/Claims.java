@@ -2,6 +2,9 @@ package com.peter.claims;
 
 import net.fabricmc.api.ModInitializer;
 import net.fabricmc.fabric.api.command.v2.CommandRegistrationCallback;
+import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 import net.minecraft.util.Identifier;
 
 import java.util.UUID;
@@ -36,5 +39,9 @@ public class Claims implements ModInitializer {
     
     public static Identifier id(String name) {
         return Identifier.of(MOD_ID, name);
+    }
+
+    public static void sendFailMessage(ServerPlayerEntity player) {
+        player.sendMessage(Text.of("You can't do that here").copy().formatted(Formatting.RED), true);
     }
 }

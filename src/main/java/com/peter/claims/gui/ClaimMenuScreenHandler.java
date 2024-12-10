@@ -23,6 +23,11 @@ public class ClaimMenuScreenHandler extends ServerOnlyScreenHandler {
 
         inventory.items[0] = new ItemButton(new ItemStack(Items.OAK_SIGN), "Edit Claim Name", (b, a) -> {
             Claims.LOGGER.info("name button");
+            StringInputScreenHandler.getString(player, (name, sh) -> {
+                if(name != null)
+                    claim.setName(name);
+                openClaimMenu(player, claim);
+            }, claim.getName(), Text.of("Change Claim Name"));
         });
 
         inventory.items[1] = new ItemButton(new ItemStack(Items.BEACON), "Edit Permissions", (b, a) -> {

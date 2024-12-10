@@ -10,6 +10,7 @@ import com.peter.claims.permission.PermissionContainer;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.BlockItem;
 import net.minecraft.item.ItemStack;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.BlockHitResult;
@@ -20,6 +21,8 @@ import net.minecraft.world.World;
 public class ItemEvents {
 
     public static ActionResult useItemEvent(PlayerEntity player, World world, Hand hand) {
+        if(world.isClient)
+            return ActionResult.PASS;
         HitResult hitResult = player.raycast(player.getBlockInteractionRange(), 0, false);
 
         if (hitResult instanceof BlockHitResult blockHit) {
@@ -36,6 +39,7 @@ public class ItemEvents {
             if(perm != null) {
                 Claims.LOGGER.info("Checking permission {} (Item -> Block)", perm);
                 if (!perms.hasPerm(perm)) {
+                    Claims.sendFailMessage((ServerPlayerEntity)player);
                     return ActionResult.FAIL;
                 }
             }

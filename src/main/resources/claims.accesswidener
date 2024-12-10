@@ -1,2 +1,3 @@
 accessWidener v2 named
 Accessible method net/minecraft/util/WorldSavePath <init> (Ljava/lang/String;)V
+Extendable method net/minecraft/entity/Entity setPos (DDD)V
