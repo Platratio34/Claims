@@ -19,6 +19,8 @@ import com.google.gson.JsonParser;
 import com.google.gson.internal.Streams;
 import com.google.gson.stream.JsonWriter;
 import com.peter.claims.Claims;
+import com.peter.claims.Cuboid;
+
 import static com.peter.claims.permission.DefaultPermissions.*;
 import com.peter.claims.permission.PermissionContainer;
 import com.peter.claims.permission.PermissionContainer.PermissionState;
@@ -97,7 +99,7 @@ public class ClaimStorage {
     }
 
     public static Claim getClaim(UUID uuid) {
-        if(claims.containsKey(uuid))
+        if (claims.containsKey(uuid))
             return claims.get(uuid);
         return null;
     }
@@ -143,10 +145,10 @@ public class ClaimStorage {
                     break;
                 }
             }
-            if(!needSaving)
+            if (!needSaving)
                 return;
         }
-        
+
         Path path = DimensionType.getSaveDirectory(server.getOverworld().getRegistryKey(),
                 server.getSavePath(CLAIM_SAVE_PATH));
 
@@ -172,7 +174,7 @@ public class ClaimStorage {
             Claims.LOGGER.error("Error saving claim data: ", e);
         }
     }
-    
+
     public static void load(MinecraftServer server) {
         Path path = DimensionType.getSaveDirectory(server.getOverworld().getRegistryKey(),
                 server.getSavePath(CLAIM_SAVE_PATH));
@@ -190,5 +192,24 @@ public class ClaimStorage {
         Claims.LOGGER.info("Loaded claim information");
         Claims.LOGGER.info("{} claim(s) loaded", claims.size());
         markClean();
+    }
+
+    /**
+     * Verify if a given pair of positions is OUTSIDE of all claims
+     * 
+     * @param blockPos
+     * @param blockPos2
+     * @return If the cuboid is outside of all claims
+     */
+    public static boolean verifyArea(Cuboid cuboid) {
+        
+
+        for (Claim claim : claims.values()) {
+            if (cuboid.overlaps(claim))
+                return false;
+            
+            
+        }
+        return true;
     }
 }

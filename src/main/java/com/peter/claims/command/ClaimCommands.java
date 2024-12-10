@@ -3,21 +3,29 @@ package com.peter.claims.command;
 import com.mojang.brigadier.CommandDispatcher;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
+import com.mojang.brigadier.exceptions.CommandSyntaxException;
 import com.peter.claims.Claims;
+import com.peter.claims.Cuboid;
 import com.peter.claims.claim.Claim;
 import com.peter.claims.claim.ClaimStorage;
+import com.peter.claims.permission.DefaultPermissions;
+import com.peter.claims.permission.PermissionContainer;
+import com.peter.claims.permission.PermissionContainer.PermissionState;
 
 import net.minecraft.command.CommandRegistryAccess;
+import net.minecraft.command.argument.EntityArgumentType;
 import net.minecraft.server.command.CommandManager.RegistrationEnvironment;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.Text;
+import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
 
 import static net.minecraft.server.command.CommandManager.*;
 
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.UUID;
 
@@ -40,6 +48,13 @@ public class ClaimCommands {
                                     .then(argument("name", StringArgumentType.greedyString()).executes(ClaimCommands::setName))))
                     .then(literal("remove")
                             .then(argument("claim", StringArgumentType.string()).executes(ClaimCommands::remove)))
+                    .then(literal("perm")
+                            .then(argument("group", StringArgumentType.string())
+                                    .then(argument("permission", StringArgumentType.string())
+                                            .then(argument("state", StringArgumentType.string()).executes(ClaimCommands::setPerm)))))
+                    .then(literal("group")
+                            .then(argument("group", StringArgumentType.string())
+                                    .then(argument("player", EntityArgumentType.players()).executes(ClaimCommands::setGroup))))
                     .then(argument("action", StringArgumentType.string()).executes(ClaimCommands::claim))
         );
     }
@@ -127,6 +142,13 @@ public class ClaimCommands {
             return -1;
         }
 
+        // need to do something here to prevent overlapping claims
+        Cuboid cuboid = new Cuboid(pos[0], pos[1]);
+        if (!ClaimStorage.verifyArea(cuboid)) {
+            context.getSource().sendError(Text.literal("Claim can not intersect existing claim"));
+            return -1;
+        }
+
         try {
             Claim claim = new Claim(pos[0], pos[1], player);
 
@@ -190,6 +212,13 @@ public class ClaimCommands {
                 return -1;
             }
         }
+
+        if (context.getSource().isExecutedByPlayer()) {
+            if (!claim.getPermissions(context.getSource().getPlayer().getUuid()).hasPerm(DefaultPermissions.EDIT_CLAIM_PERM)) {
+                context.getSource().sendError(Text.literal("You don't have permission to edit this claim"));
+                return -1;
+            }
+        }
         
         claim.setName(newName);
 
@@ -228,11 +257,109 @@ public class ClaimCommands {
                 return -1;
             }
         }
-        
+
         ClaimStorage.remove(claim);
 
         context.getSource().sendFeedback(() -> Text.literal("Claim removed"), false);
 
         return 1;
     }
+    
+    private static int setPerm(CommandContext<ServerCommandSource> context) {
+        String group = StringArgumentType.getString(context, "group");
+        String perm = StringArgumentType.getString(context, "permission");
+        String state = StringArgumentType.getString(context, "state");
+
+        if (!context.getSource().isExecutedByPlayer()) {
+            context.getSource().sendError(Text.literal("Command must be executed by a player"));
+            return -1;
+        }
+        ServerPlayerEntity player = context.getSource().getPlayer();
+
+        Claim claim = ClaimStorage.getClaim(player.getBlockPos());
+        if (claim == null) {
+            context.getSource().sendError(Text.literal("Must be standing in claim to use this command"));
+            return -1;
+        }
+        if (!claim.getPermissions(player.getUuid()).hasPerm(DefaultPermissions.EDIT_CLAIM_PERM)) {
+            context.getSource().sendError(Text.literal("You don't have permission to edit this claim"));
+            return -1;
+        }
+
+        PermissionContainer groupPerms = claim.getGroup(group);
+        if (groupPerms == null) {
+            context.getSource().sendError(Text.literal("Invalid group: " + group));
+            return -1;
+        }
+
+        Identifier permId;
+        if (!perm.contains(":")) {
+            permId = Claims.id(perm);
+        } else {
+            permId = Identifier.tryParse(perm);
+        }
+        if (!DefaultPermissions.DEFAULT_PERMISSIONS.containsKey(permId)) {
+            context.getSource().sendError(Text.literal("Invalid permission: " + permId));
+            return -1;
+        }
+
+        try {
+            PermissionState permState = PermissionState.valueOf(state);
+            groupPerms.setPerm(permId, permState);
+            context.getSource().sendFeedback(() -> Text.literal("Permission " + permId + " updated to " + permState),
+                    false);
+        } catch (IllegalArgumentException e) {
+            context.getSource().sendError(
+                    Text.literal("Invalid state: " + state + "; Must be one of ALLOWED, PROHIBITED, DEFAULT"));
+            return -1;
+        }
+
+        return 1;
+    }
+    
+    private static int setGroup(CommandContext<ServerCommandSource> context) {
+        String group = StringArgumentType.getString(context, "group");
+        Collection<ServerPlayerEntity> players;
+        try {
+            players = EntityArgumentType.getPlayers(context, "player");
+        } catch (CommandSyntaxException e) {
+            e.printStackTrace();
+            return -1;
+        }
+
+        if (!context.getSource().isExecutedByPlayer()) {
+            context.getSource().sendError(Text.literal("Command must be executed by a player"));
+            return -1;
+        }
+        ServerPlayerEntity player = context.getSource().getPlayer();
+
+        Claim claim = ClaimStorage.getClaim(player.getBlockPos());
+        if (claim == null) {
+            context.getSource().sendError(Text.literal("Must be standing in claim to use this command"));
+            return -1;
+        }
+        if (!claim.getPermissions(player.getUuid()).hasPerm(DefaultPermissions.EDIT_CLAIM_PERM)) {
+            context.getSource().sendError(Text.literal("You don't have permission to edit this claim"));
+            return -1;
+        }
+
+        if (claim.getGroup(group) == null) {
+            context.getSource().sendError(Text.literal("Invalid group: " + group));
+            return -1;
+        }
+
+        String pNames = "";
+        for (ServerPlayerEntity p2 : players) {
+            claim.setGroup(p2.getUuid(), group);
+            if (pNames.length() > 0)
+                pNames += ", ";
+            pNames += p2.getNameForScoreboard();
+        }
+        String pNames2 = pNames;
+        
+        context.getSource().sendFeedback(() -> Text.literal("Players "+pNames2+" added to group "+group), false);
+
+        return 1;
+    }
 }
+

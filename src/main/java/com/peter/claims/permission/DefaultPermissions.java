@@ -10,6 +10,8 @@ public class DefaultPermissions {
 
     public static final HashMap<Identifier, Boolean> DEFAULT_PERMISSIONS = new HashMap<>();
 
+    public static final Identifier EDIT_CLAIM_PERM = Claims.id("edit_claim");
+
     public static final Identifier PLACE_BREAK_PERM = Claims.id("place_break_block");
 
     public static final Identifier USE_BLOCK_PERM = Claims.id("use_block");
@@ -43,6 +45,8 @@ public class DefaultPermissions {
         BLOCK_PERMS.put(Identifier.ofVanilla("stonecutter"), USE_WORKSTATION_PERM);
         BLOCK_PERMS.put(Identifier.ofVanilla("enchanting_table"), USE_WORKSTATION_PERM);
         BLOCK_PERMS.put(Identifier.ofVanilla("brewing_stand"), USE_WORKSTATION_PERM);
+
+        DEFAULT_PERMISSIONS.put(EDIT_CLAIM_PERM, false);
 
         DEFAULT_PERMISSIONS.put(PLACE_BREAK_PERM, false);
 

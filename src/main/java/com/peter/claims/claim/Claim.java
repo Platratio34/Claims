@@ -10,6 +10,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.peter.claims.Claims;
+import com.peter.claims.Cuboid.CuboidLike;
 import com.peter.claims.permission.PermissionContainer;
 
 import net.minecraft.entity.player.PlayerEntity;
@@ -17,11 +18,14 @@ import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.server.world.ServerWorld;
 import net.minecraft.util.math.BlockPos;
 
-public class Claim {
+public class Claim implements CuboidLike {
 
     public static final String OWNER_GROUP = "Owner";
+    public static final String DEFAULT_GROUP = "default";
 
+    /** Minimum corner of the claim */
     protected Vector3i pos1;
+    /** Maximum corner of the claim */
     protected Vector3i pos2;
 
     protected UUID owner;
@@ -32,8 +36,11 @@ public class Claim {
 
     protected boolean dirty;
 
+    /** Default permission for the claim */
     protected PermissionContainer permissions;
+    /** Per-group permission for the claim */
     protected HashMap<String, PermissionContainer> groupPermissions = new HashMap<>();
+    /** Map of player to permission group */
     protected HashMap<UUID,String> groups = new HashMap<>();
 
     protected String name;
@@ -75,19 +82,19 @@ public class Claim {
         int minX = pos1.x <= pos2.x ? pos1.x : pos2.x;
         int minY = pos1.y <= pos2.y ? pos1.y : pos2.y;
         int minZ = pos1.z <= pos2.z ? pos1.z : pos2.z;
-        
+
         int maxX = pos1.x > pos2.x ? pos1.x : pos2.x;
         int maxY = pos1.y > pos2.y ? pos1.y : pos2.y;
         int maxZ = pos1.z > pos2.z ? pos1.z : pos2.z;
 
         if (minY < world.getBottomY()) {
             minY = world.getBottomY();
-            if(maxY < minY)
+            if (maxY < minY)
                 maxY = minY;
         }
         if (maxY > world.getTopYInclusive()) {
             maxY = world.getTopYInclusive();
-            if(minY > maxY)
+            if (minY > maxY)
                 minY = maxY;
         }
 
@@ -95,16 +102,62 @@ public class Claim {
         pos2 = new Vector3i(maxX, maxY, maxZ);
     }
 
+    /**
+     * Check if the given position is within this claim
+     * @param pos Position to check
+     * @return
+     */
     public boolean inClaim(Vector3i pos) {
         return between(pos1.x, pos2.x, pos.x) &&
                 between(pos1.y, pos2.y, pos.y) &&
                 between(pos1.z, pos2.z, pos.z);
     }
-
+    /**
+     * Check if the given position is within this claim
+     * @param pos Position to check
+     * @return
+     */
     public boolean inClaim(BlockPos pos) {
         return between(pos1.x, pos2.x, pos.getX()) &&
                 between(pos1.y, pos2.y, pos.getY()) &&
                 between(pos1.z, pos2.z, pos.getZ());
+    }
+    /**
+     * Check if the given position is within this claim
+     * @param x X Position to check
+     * @param y Y Position to check
+     * @param z Z Position to check
+     * @return
+     */
+    public boolean inClaim(int x, int y, int z) {
+        return between(pos1.x, pos2.x, x) &&
+                between(pos1.y, pos2.y, y) &&
+                between(pos1.z, pos2.z, z);
+    }
+
+    public boolean intersectsClaim(Vector3i minPoint, Vector3i maxPoint) {
+
+        // Check if we totally don't overlap
+        if (pos2.x < minPoint.x || pos1.x > maxPoint.x)
+            return false;
+        if (pos2.y < minPoint.y || pos1.y > maxPoint.y)
+            return false;
+        if (pos2.z < minPoint.z || pos1.z > maxPoint.z)
+            return false;
+        
+        // If the corners overlap
+        if (inClaim(minPoint.x, minPoint.y, minPoint.z) || inClaim(minPoint.x, minPoint.y, maxPoint.z))
+            return true;
+        if (inClaim(maxPoint.x, minPoint.y, minPoint.z) || inClaim(maxPoint.x, minPoint.y, maxPoint.z))
+            return true;
+        if (inClaim(maxPoint.x, maxPoint.y, minPoint.z) || inClaim(maxPoint.x, maxPoint.y, maxPoint.z))
+            return true;
+        if (inClaim(minPoint.x, maxPoint.y, minPoint.z) || inClaim(minPoint.x, maxPoint.y, maxPoint.z))
+            return true;
+        
+        
+        
+        return false;
     }
 
     private boolean between(int a, int b, int c) {
@@ -127,6 +180,20 @@ public class Claim {
         dirty = false;
     }
 
+    /**
+     * Get the permissions for the given player
+     * @param player Player to check for
+     * @return Permission set for the player
+     */
+    public PermissionContainer getPermissions(PlayerEntity player) {
+        return getPermissions(player.getUuid());
+    }
+
+    /**
+     * Get the permissions for the given player
+     * @param player Player to check for
+     * @return Permission set for the player
+     */
     public PermissionContainer getPermissions(UUID player) {
         if (groups.containsKey(player)) {
             String group = groups.get(player);
@@ -237,5 +304,46 @@ public class Claim {
 
     public static Vector3i blockPosToVector3i(BlockPos pos) {
         return new Vector3i(pos.getX(), pos.getY(), pos.getZ());
+    }
+
+    /**
+     * Get the permission for the specified group
+     * @param group Name of the group
+     * @return Permission set of the selected group
+     */
+    public PermissionContainer getGroup(String group) {
+        if (group.equals(DEFAULT_GROUP))
+            return permissions;
+        if (!groupPermissions.containsKey(group))
+            return null;
+        return groupPermissions.get(group);
+    }
+
+    /**
+     * Set the group of the specified player
+     * @param player Player to update
+     * @param group Group to add the player to
+     */
+    public void setGroup(UUID player, String group) {
+        if (group.equals(DEFAULT_GROUP)) {
+            groups.remove(player);
+        } else {
+            groups.put(player, group);
+        }
+    }
+
+    @Override
+    public boolean inside(Vector3i pos) {
+        return inClaim(pos);
+    }
+
+    @Override
+    public Vector3i getMin() {
+        return pos1;
+    }
+
+    @Override
+    public Vector3i getMax() {
+        return pos2;
     }
 }
