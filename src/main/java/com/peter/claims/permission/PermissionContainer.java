@@ -42,6 +42,11 @@ public class PermissionContainer {
         return new PermissionContainer(parent, perm2);
     }
 
+    
+    public boolean hasPerm(ClaimPermission perm) {
+        return hasPerm(perm.id);
+    }
+
     public boolean hasPerm(Identifier id) {
         if (permissions.containsKey(id)) {
             PermissionState state = permissions.get(id);
@@ -53,14 +58,12 @@ public class PermissionContainer {
         return defaultAllowed;
     }
 
-    public enum PermissionState {
-        ALLOWED,
-        PROHIBITED,
-        DEFAULT,
-    }
-
     public PermissionContainer setPerm(Identifier perm, PermissionState state) {
         permissions.put(perm, state);
+        return this;
+    }
+    public PermissionContainer setPerm(ClaimPermission perm, PermissionState state) {
+        permissions.put(perm.id, state);
         return this;
     }
 
@@ -116,6 +119,13 @@ public class PermissionContainer {
             }
         }
         return updated;
+    }
+
+    public PermissionState get(ClaimPermission permission) {
+        if (permissions.containsKey(permission.id)) {
+            return permissions.get(permission.id);
+        }
+        return PermissionState.DEFAULT;
     }
 
 }

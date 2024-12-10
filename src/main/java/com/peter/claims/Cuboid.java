@@ -63,28 +63,6 @@ public class Cuboid {
 
         // If not, we must be overlapping
         return true;
-
-        // // If any corner of the other is inside this
-        // if (inside(other.min.x, other.min.y, other.min.z) || inside(other.min.x, other.min.y, other.max.z))
-        //     return true;
-        // if (inside(other.max.x, other.min.y, other.min.z) || inside(other.max.x, other.min.y, other.max.z))
-        //     return true;
-        // if (inside(other.max.x, other.max.y, other.min.z) || inside(other.max.x, other.max.y, other.max.z))
-        //     return true;
-        // if (inside(other.min.x, other.max.y, other.min.z) || inside(other.min.x, other.max.y, other.max.z))
-        //     return true;
-
-        // // If any corner of this is inside the other
-        // if (other.inside(min.x, min.y, min.z) || other.inside(min.x, min.y, max.z))
-        //     return true;
-        // if (other.inside(max.x, min.y, min.z) || other.inside(max.x, min.y, max.z))
-        //     return true;
-        // if (other.inside(max.x, max.y, min.z) || other.inside(max.x, max.y, max.z))
-        //     return true;
-        // if (other.inside(min.x, max.y, min.z) || other.inside(min.x, max.y, max.z))
-        //     return true;
-
-        // return false;
     }
     
     public interface CuboidLike {

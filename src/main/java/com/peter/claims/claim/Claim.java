@@ -11,7 +11,9 @@ import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.peter.claims.Claims;
 import com.peter.claims.Cuboid.CuboidLike;
+import com.peter.claims.permission.ClaimPermission;
 import com.peter.claims.permission.PermissionContainer;
+import com.peter.claims.permission.PermissionState;
 
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.network.ServerPlayerEntity;
@@ -32,7 +34,7 @@ public class Claim implements CuboidLike {
 
     protected ServerWorld world;
 
-    protected final UUID claimId;
+    public final UUID claimId;
 
     protected boolean dirty;
 
@@ -345,5 +347,19 @@ public class Claim implements CuboidLike {
     @Override
     public Vector3i getMax() {
         return pos2;
+    }
+
+    public PermissionState getPermission(String group, ClaimPermission permission) {
+        if (group.equals(DEFAULT_GROUP))
+            return permissions.get(permission);
+        if (!groupPermissions.containsKey(group))
+            throw new IllegalArgumentException("Unknown group: \"" + group + "\"");
+        return groupPermissions.get(group).get(permission);
+    }
+
+    public PermissionContainer getPermissions(String group) {
+        if (group.equals(DEFAULT_GROUP))
+            return permissions;
+        return groupPermissions.get(group);
     }
 }

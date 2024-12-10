@@ -8,9 +8,10 @@ import com.peter.claims.Claims;
 import com.peter.claims.Cuboid;
 import com.peter.claims.claim.Claim;
 import com.peter.claims.claim.ClaimStorage;
-import com.peter.claims.permission.DefaultPermissions;
+import com.peter.claims.gui.ClaimMenuScreenHandler;
+import com.peter.claims.permission.ClaimPermissions;
 import com.peter.claims.permission.PermissionContainer;
-import com.peter.claims.permission.PermissionContainer.PermissionState;
+import com.peter.claims.permission.PermissionState;
 
 import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.command.argument.EntityArgumentType;
@@ -60,8 +61,20 @@ public class ClaimCommands {
     }
     
     private static int base(CommandContext<ServerCommandSource> context) {
+        if (!context.getSource().isExecutedByPlayer()) {
+            context.getSource().sendError(Text.literal("Base command must be executed by a player"));
+            return -1;
+        }
+        ServerPlayerEntity player = context.getSource().getPlayer();
+        Claim claim = ClaimStorage.getClaim(player.getBlockPos());
+        if (claim == null) {
+            context.getSource().sendError(Text.literal("Must be standing in claim to use command"));
+            return -1;
+        }
+        ClaimMenuScreenHandler.openClaimMenu(player, claim);
+
         context.getSource().sendFeedback(() -> Text.literal("Claim command"), false);
-            return 1;
+        return 1;
     }
 
     private static int claim(CommandContext<ServerCommandSource> context) {
@@ -214,7 +227,7 @@ public class ClaimCommands {
         }
 
         if (context.getSource().isExecutedByPlayer()) {
-            if (!claim.getPermissions(context.getSource().getPlayer().getUuid()).hasPerm(DefaultPermissions.EDIT_CLAIM_PERM)) {
+            if (!claim.getPermissions(context.getSource().getPlayer().getUuid()).hasPerm(ClaimPermissions.EDIT_CLAIM_PERM)) {
                 context.getSource().sendError(Text.literal("You don't have permission to edit this claim"));
                 return -1;
             }
@@ -281,7 +294,7 @@ public class ClaimCommands {
             context.getSource().sendError(Text.literal("Must be standing in claim to use this command"));
             return -1;
         }
-        if (!claim.getPermissions(player.getUuid()).hasPerm(DefaultPermissions.EDIT_CLAIM_PERM)) {
+        if (!claim.getPermissions(player.getUuid()).hasPerm(ClaimPermissions.EDIT_CLAIM_PERM)) {
             context.getSource().sendError(Text.literal("You don't have permission to edit this claim"));
             return -1;
         }
@@ -298,7 +311,7 @@ public class ClaimCommands {
         } else {
             permId = Identifier.tryParse(perm);
         }
-        if (!DefaultPermissions.DEFAULT_PERMISSIONS.containsKey(permId)) {
+        if (!ClaimPermissions.PERMISSIONS.containsKey(permId)) {
             context.getSource().sendError(Text.literal("Invalid permission: " + permId));
             return -1;
         }
@@ -306,7 +319,7 @@ public class ClaimCommands {
         try {
             PermissionState permState = PermissionState.valueOf(state);
             groupPerms.setPerm(permId, permState);
-            context.getSource().sendFeedback(() -> Text.literal("Permission " + permId + " updated to " + permState),
+            context.getSource().sendFeedback(() -> Text.literal("Permission " + permId + " updated to ").append(permState.getText()),
                     false);
         } catch (IllegalArgumentException e) {
             context.getSource().sendError(
@@ -338,7 +351,7 @@ public class ClaimCommands {
             context.getSource().sendError(Text.literal("Must be standing in claim to use this command"));
             return -1;
         }
-        if (!claim.getPermissions(player.getUuid()).hasPerm(DefaultPermissions.EDIT_CLAIM_PERM)) {
+        if (!claim.getPermissions(player.getUuid()).hasPerm(ClaimPermissions.EDIT_CLAIM_PERM)) {
             context.getSource().sendError(Text.literal("You don't have permission to edit this claim"));
             return -1;
         }

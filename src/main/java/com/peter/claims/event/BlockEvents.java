@@ -3,7 +3,9 @@ package com.peter.claims.event;
 import com.peter.claims.Claims;
 import com.peter.claims.claim.Claim;
 import com.peter.claims.claim.ClaimStorage;
-import static com.peter.claims.permission.DefaultPermissions.*;
+import static com.peter.claims.permission.ClaimPermissions.*;
+
+import com.peter.claims.permission.ClaimPermission;
 import com.peter.claims.permission.PermissionContainer;
 
 import net.minecraft.block.AbstractSignBlock;
@@ -57,7 +59,7 @@ public class BlockEvents {
         return ActionResult.PASS;
     }
     
-    public static boolean checkBlockPerm(World world, BlockPos pos, PlayerEntity player, Hand hand, Identifier defaultPerm) {
+    public static boolean checkBlockPerm(World world, BlockPos pos, PlayerEntity player, Hand hand, ClaimPermission defaultPerm) {
         BlockState blockState = world.getBlockState(pos);
         Block block = blockState.getBlock();
 
@@ -69,7 +71,7 @@ public class BlockEvents {
         boolean isBlockItem = stack.getItem() instanceof BlockItem;
 
         Identifier blockId = Registries.BLOCK.getId(block);
-        Identifier perm = defaultPerm;
+        ClaimPermission perm = defaultPerm;
 
         if (player.isSneaking() && isBlockItem) {
             perm = PLACE_BREAK_PERM;

@@ -21,9 +21,11 @@ import com.google.gson.stream.JsonWriter;
 import com.peter.claims.Claims;
 import com.peter.claims.Cuboid;
 
-import static com.peter.claims.permission.DefaultPermissions.*;
+import static com.peter.claims.permission.ClaimPermissions.*;
+
+import com.peter.claims.permission.ClaimPermission;
 import com.peter.claims.permission.PermissionContainer;
-import com.peter.claims.permission.PermissionContainer.PermissionState;
+import com.peter.claims.permission.PermissionState;
 
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.MinecraftServer;
@@ -46,9 +48,8 @@ public class ClaimStorage {
     public static final WorldSavePath CLAIM_SAVE_PATH = new WorldSavePath("claims.json");
 
     static {
-        for (Entry<Identifier, Boolean> entry : DEFAULT_PERMISSIONS.entrySet()) {
-            defaultPermissions.setPerm(entry.getKey(),
-                    entry.getValue() ? PermissionState.ALLOWED : PermissionState.PROHIBITED);
+        for (Entry<Identifier, ClaimPermission> entry : PERMISSIONS.entrySet()) {
+            defaultPermissions.setPerm(entry.getKey(), entry.getValue().defaultState);
             ownerPermissions.setPerm(entry.getKey(), PermissionState.ALLOWED);
         }
     }
