@@ -74,9 +74,11 @@ public class PermissionEditMenuScreenHandler extends ServerOnlyScreenHandler {
                 case DEFAULT -> perms.setPerm(permission, ALLOWED);
                 case PROHIBITED -> perms.setPerm(permission, ALLOWED);
             }
+            claim.markDirty();
             button.setName(Text.of(permission.name + ": ").copy().append(perms.get(permission).getText()));
         } else if (action == SlotActionType.CLONE) {
             perms.setPerm(permission, DEFAULT);
+            claim.markDirty();
             button.setName(Text.of(permission.name + ": ").copy().append(DEFAULT.getText()));
         }
     }

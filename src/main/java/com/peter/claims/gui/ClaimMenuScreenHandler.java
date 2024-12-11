@@ -1,6 +1,5 @@
 package com.peter.claims.gui;
 
-import com.peter.claims.Claims;
 import com.peter.claims.claim.Claim;
 
 import net.minecraft.entity.player.PlayerEntity;
@@ -14,7 +13,7 @@ import net.minecraft.text.Text;
 
 public class ClaimMenuScreenHandler extends ServerOnlyScreenHandler {
 
-    protected Claim claim;
+    protected final Claim claim;
 
     public ClaimMenuScreenHandler(int syncId, PlayerInventory playerInventory, Claim claim) {
         super(syncId, playerInventory, 1);
@@ -22,7 +21,6 @@ public class ClaimMenuScreenHandler extends ServerOnlyScreenHandler {
         this.claim = claim;
 
         inventory.items[0] = new ItemButton(new ItemStack(Items.OAK_SIGN), "Edit Claim Name", (b, a) -> {
-            Claims.LOGGER.info("name button");
             StringInputScreenHandler.getString(player, (name, sh) -> {
                 if(name != null)
                     claim.setName(name);
@@ -31,12 +29,11 @@ public class ClaimMenuScreenHandler extends ServerOnlyScreenHandler {
         });
 
         inventory.items[1] = new ItemButton(new ItemStack(Items.BEACON), "Edit Permissions", (b, a) -> {
-            Claims.LOGGER.info("perm button");
             GroupPermissionsMenuScreenHandler.openMenu((ServerPlayerEntity)playerInventory.player, claim);
         });
 
         inventory.items[2] = new ItemButton(new ItemStack(Items.WRITABLE_BOOK), "Edit Groups", (b, a) -> {
-            Claims.LOGGER.info("group button");
+            GroupMenuScreenHandler.openMenu((ServerPlayerEntity)playerInventory.player, claim);
         });
     }
 

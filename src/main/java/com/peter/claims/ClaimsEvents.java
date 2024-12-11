@@ -9,7 +9,9 @@ import net.fabricmc.fabric.api.event.lifecycle.v1.ServerLifecycleEvents;
 import net.fabricmc.fabric.api.event.player.AttackEntityCallback;
 import net.fabricmc.fabric.api.event.player.PlayerBlockBreakEvents;
 import net.fabricmc.fabric.api.event.player.UseBlockCallback;
+import net.fabricmc.fabric.api.event.player.UseEntityCallback;
 import net.fabricmc.fabric.api.event.player.UseItemCallback;
+import net.fabricmc.fabric.api.networking.v1.ServerPlayConnectionEvents;
 
 public class ClaimsEvents {
 
@@ -20,9 +22,18 @@ public class ClaimsEvents {
 
         ServerLifecycleEvents.BEFORE_SAVE.register((server, flush, force) -> {
             ClaimStorage.save(server);
+            PlayerCache.save(server);
         });
-        ServerLifecycleEvents.SERVER_STARTED.register(ClaimStorage::load);
+        ServerLifecycleEvents.SERVER_STARTED.register(server -> {
+            ClaimStorage.load(server);
+            PlayerCache.load(server);
+        });
 
         AttackEntityCallback.EVENT.register(PlayerEvents::onAttackEvent);
+        UseEntityCallback.EVENT.register(PlayerEvents::onEntityUseEvent);
+
+        ServerPlayConnectionEvents.JOIN.register((networkHandler, packetSender, server) -> {
+            PlayerCache.addPlayer(networkHandler.player);
+        });
     }
 }

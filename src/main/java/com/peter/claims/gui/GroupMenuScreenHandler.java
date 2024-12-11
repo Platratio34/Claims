@@ -1,4 +1,5 @@
 package com.peter.claims.gui;
+
 import com.peter.claims.claim.Claim;
 
 import net.minecraft.entity.player.PlayerEntity;
@@ -10,21 +11,17 @@ import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
 
-public class GroupPermissionsMenuScreenHandler extends ServerOnlyScreenHandler {
+public class GroupMenuScreenHandler extends ServerOnlyScreenHandler {
 
     protected final Claim claim;
 
-    public GroupPermissionsMenuScreenHandler(int syncId, PlayerInventory playerInventory, Claim claim) {
+    public GroupMenuScreenHandler(int syncId, PlayerInventory playerInventory, Claim claim) {
         super(syncId, playerInventory, 1);
 
         this.claim = claim;
 
-        inventory.items[0] = new ItemButton(new ItemStack(Items.BOOK), "default", (b, a) -> {
-            PermissionEditMenuScreenHandler.openMenu(player, claim, "default");
-        });
-
-        inventory.items[1] = new ItemButton(new ItemStack(Items.BOOK), "Owner", (b, a) -> {
-            PermissionEditMenuScreenHandler.openMenu(player, claim, "Owner");
+        inventory.items[0] = new ItemButton(new ItemStack(Items.BOOK), "Owner", (b, a) -> {
+            GroupEditMenuScreenHandler.openMenu(player, claim, "Owner");
         });
 
         inventory.items[8] = new ItemButton(new ItemStack(Items.BARRIER), "Back", (b, a) -> {
@@ -36,14 +33,13 @@ public class GroupPermissionsMenuScreenHandler extends ServerOnlyScreenHandler {
         NamedScreenHandlerFactory fac = new NamedScreenHandlerFactory() {
             @Override
             public ScreenHandler createMenu(int syncId, PlayerInventory playerInventory, PlayerEntity player) {
-                return new GroupPermissionsMenuScreenHandler(syncId, playerInventory, claim);
+                return new GroupMenuScreenHandler(syncId, playerInventory, claim);
             }
             @Override
             public Text getDisplayName() {
-                return Text.of(claim.getName() + " - Group Permissions");
+                return Text.of(claim.getName() + " - Groups");
             }
         };
         player.openHandledScreen(fac);
     }
-    
 }

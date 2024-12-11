@@ -1,6 +1,8 @@
 package com.peter.claims.claim;
 
+import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map.Entry;
 import java.util.UUID;
 
@@ -169,11 +171,18 @@ public class Claim implements CuboidLike {
         return b <= c && c <= a;
     }
 
+    /**
+     * Marks the claim as dirt and needing saving
+     */
     public void markDirty() {
         dirty = true;
         ClaimStorage.markDirty();
     }
 
+    /**
+     * Checks if the claim is dirty and in need of saving
+     * @return Claim needs to be saved
+     */
     public boolean isDirty() {
         return dirty;
     }
@@ -207,6 +216,11 @@ public class Claim implements CuboidLike {
         return permissions;
     }
 
+    /**
+     * Set the name of the claim.
+     * Marks the claim dirty
+     * @param name New name for the claim
+     */
     public void setName(String name) {
         this.name = name;
         markDirty();
@@ -322,16 +336,20 @@ public class Claim implements CuboidLike {
     }
 
     /**
-     * Set the group of the specified player
+     * Set the group of the specified player.
+     * Marks the claim dirty
      * @param player Player to update
      * @param group Group to add the player to
      */
     public void setGroup(UUID player, String group) {
-        if (group.equals(DEFAULT_GROUP)) {
+        if (player.equals(owner)) // Don't accidentally change the group information for the claim owner
+            return;
+        if (group == null || group.equals(DEFAULT_GROUP)) {
             groups.remove(player);
         } else {
             groups.put(player, group);
         }
+        markDirty();
     }
 
     @Override
@@ -361,5 +379,18 @@ public class Claim implements CuboidLike {
         if (group.equals(DEFAULT_GROUP))
             return permissions;
         return groupPermissions.get(group);
+    }
+
+    public List<UUID> getGroupPlayers(String group) {
+        ArrayList<UUID> players = new ArrayList<>();
+        for (Entry<UUID, String> entry : groups.entrySet()) {
+            if(entry.getValue().equals(group))
+                players.add(entry.getKey());
+        }
+        return players;
+    }
+
+    public UUID getOwner() {
+        return owner;
     }
 }

@@ -56,6 +56,8 @@ public class ClaimPermissions {
             new ClaimPermission("attack_entity", Items.IRON_SWORD, "Attack Entity", PROHIBITED));
     public static final ClaimPermission SPAWN_ENTITY_PERMISSION = registerPerm(
             new ClaimPermission("spawn_entity", Items.ZOMBIE_SPAWN_EGG, "Spawn Entity", PROHIBITED));
+    public static final ClaimPermission USE_ENTITY_PERMISSION = registerPerm(
+            new ClaimPermission("use_entity", Items.ITEM_FRAME, "Use Entity", ALLOWED));
 
     public static final HashMap<Identifier, ClaimPermission> BLOCK_PERMS = new HashMap<>();
 

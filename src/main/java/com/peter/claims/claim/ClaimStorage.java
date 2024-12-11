@@ -1,6 +1,7 @@
 package com.peter.claims.claim;
 
 import java.io.BufferedWriter;
+import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
@@ -45,7 +46,7 @@ public class ClaimStorage {
 
     public static PermissionContainer globalPermissions = new PermissionContainer().defaultAllowed();
 
-    public static final WorldSavePath CLAIM_SAVE_PATH = new WorldSavePath("claims.json");
+    public static final WorldSavePath CLAIM_SAVE_PATH = new WorldSavePath("claims");
 
     static {
         for (Entry<Identifier, ClaimPermission> entry : PERMISSIONS.entrySet()) {
@@ -153,7 +154,7 @@ public class ClaimStorage {
         Path path = DimensionType.getSaveDirectory(server.getOverworld().getRegistryKey(),
                 server.getSavePath(CLAIM_SAVE_PATH));
 
-        try (BufferedWriter writer = new BufferedWriter(new FileWriter(path.toFile()))) {
+        try (BufferedWriter writer = new BufferedWriter(new FileWriter(path.resolve("claims.json").toFile()))) {
             JsonObject data = serialize();
 
             StringWriter stringWriter = new StringWriter();
@@ -181,8 +182,14 @@ public class ClaimStorage {
                 server.getSavePath(CLAIM_SAVE_PATH));
         JsonObject json;
         claims.clear();
+        File f = path.resolve("claims.json").toFile();
+        if (!f.exists()) {
+            Claims.LOGGER.info("No claim information to load");
+            markClean();
+            return;
+        }
         try {
-            json = JsonParser.parseReader(new FileReader(path.toFile())).getAsJsonObject();
+            json = JsonParser.parseReader(new FileReader(f)).getAsJsonObject();
         } catch (IllegalStateException | IOException e) {
             Claims.LOGGER.error("Error loading claim data: ", e);
             return;

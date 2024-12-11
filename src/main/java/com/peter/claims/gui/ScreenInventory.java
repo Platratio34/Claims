@@ -74,7 +74,7 @@ public class ScreenInventory implements Inventory {
     }
 
     public void click(int slotI, SlotActionType actionType) {
-        if (slotI > items.length) {
+        if (slotI < 0 || slotI > items.length) {
             return;
         }
         if(items[slotI] != null)
