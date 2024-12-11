@@ -2,6 +2,8 @@ package com.peter.claims.permission;
 
 import java.util.HashMap;
 
+import com.peter.claims.Claims;
+
 import net.minecraft.item.Items;
 import net.minecraft.util.Identifier;
 import static com.peter.claims.permission.PermissionState.*;
@@ -79,9 +81,23 @@ public class ClaimPermissions {
 
     public static ClaimPermission registerPerm(ClaimPermission perm) {
         if (PERMISSIONS.containsKey(perm.id))
-            throw new IllegalStateException("Permission with id "+perm.id+" already registered");
+            throw new IllegalStateException("Permission with id " + perm.id + " already registered");
         PERMISSIONS.put(perm.id, perm);
         return perm;
+    }
+    
+    private static boolean logChecks = false;
+
+    public static void logCheck(ClaimPermission permission, String source) {
+        if (!logChecks)
+            return;
+        Claims.LOGGER.info("Checking permission {} ({})", permission, source);
+    }
+
+    public static void logCheck(Identifier permission, String source) {
+        if(!logChecks)
+            return;
+        Claims.LOGGER.info("Checking permission {} ({})", permission, source);
     }
 
 }

@@ -47,8 +47,8 @@ public class ItemEvents {
                 Claims.LOGGER.info("{}", item.getClass().getName());
             }
 
-            if(perm != null) {
-                Claims.LOGGER.info("Checking permission {} (Item -> Block)", perm);
+            if (perm != null) {
+                logCheck(perm, "Item -> Block");
                 if (!perms.hasPerm(perm)) {
                     Claims.sendFailMessage((ServerPlayerEntity)player);
                     return ActionResult.FAIL;

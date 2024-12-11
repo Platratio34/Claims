@@ -50,7 +50,7 @@ public class BlockEvents {
             permissions = claim.getPermissions(player.getUuid());
         }
 
-        Claims.LOGGER.info("Checking permission {} (Block)", PLACE_BREAK_PERM);
+        logCheck(PLACE_BREAK_PERM, "Block");
 
         if (!permissions.hasPerm(PLACE_BREAK_PERM)) {
             Claims.sendFailMessage((ServerPlayerEntity)player);
@@ -123,7 +123,7 @@ public class BlockEvents {
             }
         }
         
-        Claims.LOGGER.info("Checking permission {} (Block)", perm);
+        logCheck(perm, "Block");
 
         return ClaimStorage.getPerms(pos, player).hasPerm(perm);
     }

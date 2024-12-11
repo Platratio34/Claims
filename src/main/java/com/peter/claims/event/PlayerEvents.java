@@ -14,6 +14,7 @@ import net.minecraft.entity.decoration.EndCrystalEntity;
 import net.minecraft.entity.decoration.ItemFrameEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.entity.vehicle.BoatEntity;
+import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
 import net.minecraft.util.hit.EntityHitResult;
@@ -37,13 +38,30 @@ public class PlayerEvents {
         } else if (isBlockEntity) {
             perm = PLACE_BREAK_PERM;
         }
-        
-        Claims.LOGGER.info("Checking permission {} (Attack Entity)", perm);
-        
+
+        logCheck(perm, "Attack Entity");
+
         if (!ClaimStorage.getPerms(entity.getBlockPos(), player).hasPerm(perm)) {
+            Claims.sendFailMessage((ServerPlayerEntity)player);
             return ActionResult.FAIL;
         }
 
+        return ActionResult.PASS;
+    }
+    
+    public static ActionResult onEntityUseEvent(PlayerEntity player, World world, Hand hand, Entity entity, EntityHitResult hit) {
+        if (world.isClient())
+            return ActionResult.PASS;
+
+        ClaimPermission perm = USE_ENTITY_PERMISSION;
+
+        logCheck(perm, "Use Entity");
+
+        if (!ClaimStorage.getPerms(entity.getBlockPos(), player).hasPerm(perm)) {
+            Claims.sendFailMessage((ServerPlayerEntity)player);
+            return ActionResult.FAIL;
+        }
+        
         return ActionResult.PASS;
     }
 }
