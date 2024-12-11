@@ -9,7 +9,11 @@ import com.peter.claims.permission.PermissionContainer;
 
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.item.BlockItem;
+import net.minecraft.item.BoatItem;
+import net.minecraft.item.BucketItem;
+import net.minecraft.item.Item;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.SpawnEggItem;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.ActionResult;
 import net.minecraft.util.Hand;
@@ -27,13 +31,20 @@ public class ItemEvents {
 
         if (hitResult instanceof BlockHitResult blockHit) {
             BlockPos pos = blockHit.getBlockPos();
-            ClaimPermission perm;
+            ClaimPermission perm = USE_BLOCK_PERM;
             PermissionContainer perms = ClaimStorage.getPerms(pos, player);
-            ItemStack stack = player.getActiveItem();
-            if (stack.getItem() instanceof BlockItem) {
+            ItemStack stack = player.getMainHandStack();
+            if(hand == Hand.OFF_HAND)
+                stack = player.getOffHandStack();
+            Item item = stack.getItem();
+            if (item instanceof BlockItem || item instanceof BucketItem) {
                 perm = PLACE_BREAK_PERM;
+            } else if (item instanceof BoatItem) {
+                perm = PLACE_BREAK_BOAT_PERM;
+            } else if (item instanceof SpawnEggItem) {
+                perm = PLACE_BREAK_BOAT_PERM;
             } else {
-                perm = USE_BLOCK_PERM;
+                Claims.LOGGER.info("{}", item.getClass().getName());
             }
 
             if(perm != null) {

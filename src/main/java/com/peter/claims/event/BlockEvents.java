@@ -22,8 +22,13 @@ import net.minecraft.block.TrapdoorBlock;
 import net.minecraft.block.entity.BlockEntity;
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.inventory.Inventory;
+import net.minecraft.item.ArmorStandItem;
 import net.minecraft.item.BlockItem;
+import net.minecraft.item.EndCrystalItem;
+import net.minecraft.item.Item;
+import net.minecraft.item.ItemFrameItem;
 import net.minecraft.item.ItemStack;
+import net.minecraft.item.SpawnEggItem;
 import net.minecraft.registry.Registries;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.util.ActionResult;
@@ -75,13 +80,18 @@ public class BlockEvents {
             stack = player.getOffHandStack();
         }
 
-        boolean isBlockItem = stack.getItem() instanceof BlockItem;
+        Item item = stack.getItem();
+        boolean isBlockItem = item instanceof BlockItem || item instanceof ArmorStandItem || item instanceof ItemFrameItem;
 
         Identifier blockId = Registries.BLOCK.getId(block);
         ClaimPermission perm = defaultPerm;
 
         if (player.isSneaking() && isBlockItem) {
             perm = PLACE_BREAK_PERM;
+        } else if (item instanceof EndCrystalItem) {
+            perm = PLACE_END_CRYSTAL_PERM;
+        } else if (item instanceof SpawnEggItem) {
+            perm = SPAWN_ENTITY_PERMISSION;
         } else if (BLOCK_PERMS.containsKey(blockId)) {
             perm = BLOCK_PERMS.get(blockId);
         } else {
@@ -108,6 +118,8 @@ public class BlockEvents {
                 if (e instanceof Inventory) {
                     perm = OPEN_INVENTORY_PERM;
                 }
+            } else if (isBlockItem) {
+                perm = PLACE_BREAK_PERM;
             }
         }
         
