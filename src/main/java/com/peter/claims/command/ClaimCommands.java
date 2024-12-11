@@ -39,28 +39,109 @@ public class ClaimCommands {
     public static void register(CommandDispatcher<ServerCommandSource> dispatcher, CommandRegistryAccess registryAccess,
             RegistrationEnvironment environment) {
         dispatcher.register(
-                literal(CLAIM_COMMAND).executes(ClaimCommands::base)
-                    .then(literal("pos1").executes(ClaimCommands::pos1))
-                    .then(literal("pos2").executes(ClaimCommands::pos2))
-                    .then(literal("create").executes(ClaimCommands::createClaim))
-                    .then(literal("list").executes(ClaimCommands::list))
-                    .then(literal("name")
-                            .then(argument("claim", StringArgumentType.string())
-                                    .then(argument("name", StringArgumentType.greedyString()).executes(ClaimCommands::setName))))
-                    .then(literal("remove")
-                            .then(argument("claim", StringArgumentType.string()).executes(ClaimCommands::remove)))
-                    .then(literal("perm")
-                            .then(argument("group", StringArgumentType.string())
-                                    .then(argument("permission", StringArgumentType.string())
-                                            .then(argument("state", StringArgumentType.string()).executes(ClaimCommands::setPerm)))))
-                    .then(literal("group")
-                            .then(argument("group", StringArgumentType.string())
-                                    .then(argument("player", EntityArgumentType.players()).executes(ClaimCommands::setGroup))))
-                    .then(argument("action", StringArgumentType.string()).executes(ClaimCommands::claim))
-        );
+                literal(CLAIM_COMMAND).executes(ClaimCommands::gui)
+                        .then(literal("help").executes(ClaimCommands::help)
+                                .then(argument("command", StringArgumentType.string()).executes(ClaimCommands::helpCommand)))
+                        .then(literal("pos1").executes(ClaimCommands::pos1))
+                        .then(literal("pos2").executes(ClaimCommands::pos2))
+                        .then(literal("create").executes(ClaimCommands::createClaim))
+                        .then(literal("list").executes(ClaimCommands::list))
+                        .then(literal("name")
+                                .then(argument("claim", StringArgumentType.string())
+                                        .then(argument("name", StringArgumentType.greedyString())
+                                                .executes(ClaimCommands::setName))))
+                        .then(literal("remove")
+                                .then(argument("claim", StringArgumentType.string()).executes(ClaimCommands::remove)))
+                        .then(literal("perm")
+                                .then(argument("group", StringArgumentType.string())
+                                        .then(argument("permission", StringArgumentType.string())
+                                                .then(argument("state", StringArgumentType.string())
+                                                        .executes(ClaimCommands::setPerm)))))
+                        .then(literal("group")
+                                .then(argument("group", StringArgumentType.string())
+                                        .then(argument("player", EntityArgumentType.players())
+                                                .executes(ClaimCommands::setGroup))))
+                        .then(argument("action", StringArgumentType.string()).executes(ClaimCommands::claim)));
     }
     
-    private static int base(CommandContext<ServerCommandSource> context) {
+    private static int help(CommandContext<ServerCommandSource> context) {
+        String rt = "Claims Commands:";
+        rt += "\n§a|§e help §r- Show this list";
+        rt += "\n§a|§e pos1 §r- Select 1st position for claiming";
+        rt += "\n§a|§e pos2 §r- Select 2nd position for claiming";
+        rt += "\n§a|§e create §r- Create a new claim from selected position";
+        rt += "\n§a|§e remove <§bclaim§e> §r- Remove a claim";
+        rt += "\n§a|§e list §r- List all current claims";
+        rt += "\n§a|§e perm <§bgroup§e> <§bpermission§e> <§bstate§e> §r- Set group permission";
+        rt += "\n§a|§e group <§bgroup§e> <§bplayer§e> §r- Set player group";
+        rt += "\n§a|§e name <§bclaim§e> <§bname§e> §r- Rename a claim";
+        Text text = Text.of(rt);
+        context.getSource().sendFeedback(() -> text, false);
+
+        return 1;
+    }
+    
+    private static int helpCommand(CommandContext<ServerCommandSource> context) {
+        String command = StringArgumentType.getString(context, "command");
+        String rt = "Claims Commands: §e";
+        switch (command) {
+            case "help":
+                rt += "help [<§bcommand§e>]§f";
+                rt += "\n§a|§f Show a list of all sub-command or help for specific command";
+                rt += "\n§a|§b command §f - §o(Optional)§r Sub-command to get help for";
+                break;
+            case "pos1":
+                rt += "pos1§f";
+                rt += "\n§a|§f Select 1st position for claiming";
+                break;
+            case "pos2":
+                rt += "pos2§f";
+                rt += "\n§a|§f Select 2nd position for claiming";
+                break;
+            case "create":
+                rt += "create§f";
+                rt += "\n§a|§f Create a new claim from selected position";
+                break;
+            case "list":
+                rt += "liste§f";
+                rt += "\n§a|§f List all current claims";
+                break;
+            case "remove":
+                rt += "remove <§bclaim§e>§f";
+                rt += "\n§a|§f Remove a claim";
+                rt += "\n§a|§b claim §f- Claim UUID §lOR§r§f `-` for current claim";
+                break;
+            case "perm":
+                rt += "perm <§bgroup§e> <§bpermission§e> <§bstate§e>§f";
+                rt += "\n§a|§f Set group permission";
+                rt += "\n§a|§b group §f- Group to modify";
+                rt += "\n§a|§b permission §f- Permission (ID) to change. (ex. use_block, claims:use_block)";
+                rt += "\n§a|§b state §f- Permission state: §aALLOWED§f, §cPROHIBITED§f, or §7DEFAULT";
+                break;
+            case "group":
+                rt += "group <§bgroup§e> <§bplayer§e>§f";
+                rt += "\n§a|§f Set player group";
+                rt += "\n§a|§b group §f- Group to modify";
+                rt += "\n§a|§b player §f- Player(s) to add to the group";
+                break;
+            case "name":
+                rt += "name <§bclaim§e> <§bname§e>§f";
+                rt += "\n§a|§f Rename a claim";
+                rt += "\n§a|§b claim §f- Claim UUID §lOR§r§f `-` for current claim";
+                rt += "\n§a|§b name §f- Name for the claim";
+                break;
+        
+            default:
+                context.getSource().sendError(Text.literal("Unknown sub-command for help"));
+                return -1;
+        }
+        Text text = Text.of(rt);
+        context.getSource().sendFeedback(() -> text, false);
+
+        return 1;
+    }
+    
+    private static int gui(CommandContext<ServerCommandSource> context) {
         if (!context.getSource().isExecutedByPlayer()) {
             context.getSource().sendError(Text.literal("Base command must be executed by a player"));
             return -1;
@@ -71,9 +152,14 @@ public class ClaimCommands {
             context.getSource().sendError(Text.literal("Must be standing in claim to use command"));
             return -1;
         }
+        
+        if (!claim.getPermissions(context.getSource().getPlayer().getUuid()).hasPerm(ClaimPermissions.EDIT_CLAIM_PERM)) {
+            context.getSource().sendError(Text.literal("You don't have permission to edit this claim"));
+            return -1;
+        }
+
         ClaimMenuScreenHandler.openClaimMenu(player, claim);
 
-        context.getSource().sendFeedback(() -> Text.literal("Claim command"), false);
         return 1;
     }
 
@@ -182,12 +268,12 @@ public class ClaimCommands {
         String claims = "";
         for (UUID claimId : ClaimStorage.getClaimUUIDs()) {
             if (claims.length() > 0) {
-                claims += ", ";
+                claims += "\n";
             }
-            claims += ClaimStorage.getClaim(claimId).getName() + " ("+claimId.toString()+")";
+            claims += "§a|§f " + ClaimStorage.getClaim(claimId).getName() + " §7("+claimId.toString()+")§f";
         }
 
-        String msg = "Claims: " + claims;
+        String msg = "Claims:\n" + claims;
 
         context.getSource().sendFeedback(() -> Text.literal(msg), false);
 
@@ -271,6 +357,13 @@ public class ClaimCommands {
             }
         }
 
+        if (context.getSource().isExecutedByPlayer()) {
+            if (!claim.getPermissions(context.getSource().getPlayer().getUuid()).hasPerm(ClaimPermissions.EDIT_CLAIM_PERM)) {
+                context.getSource().sendError(Text.literal("You don't have permission to edit this claim"));
+                return -1;
+            }
+        }
+
         ClaimStorage.remove(claim);
 
         context.getSource().sendFeedback(() -> Text.literal("Claim removed"), false);
@@ -323,7 +416,7 @@ public class ClaimCommands {
                     false);
         } catch (IllegalArgumentException e) {
             context.getSource().sendError(
-                    Text.literal("Invalid state: " + state + "; Must be one of ALLOWED, PROHIBITED, DEFAULT"));
+                    Text.literal("Invalid state: " + state + "; Must be one of §aALLOWED§c, §4PROHIBITED§c, or §7DEFAULT§c"));
             return -1;
         }
 
