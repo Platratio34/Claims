@@ -12,6 +12,7 @@ import com.google.gson.JsonArray;
 import com.google.gson.JsonElement;
 import com.google.gson.JsonObject;
 import com.peter.claims.Claims;
+import com.peter.claims.Cuboid;
 import com.peter.claims.Cuboid.CuboidLike;
 import com.peter.claims.permission.ClaimPermission;
 import com.peter.claims.permission.PermissionContainer;
@@ -69,7 +70,6 @@ public class Claim implements CuboidLike {
         claimId = ClaimStorage.newClaimUUID();
         permissions = ClaimStorage.copyDefaultPermissions();
         groups.put(owner, OWNER_GROUP);
-        groupPermissions.put(OWNER_GROUP, ClaimStorage.copyOwnerPermissions().setParent(permissions));
 
         if (!owner.equals(Claims.ADMIN_UUID)) {
             PlayerEntity player = world.getPlayerByUuid(owner);
@@ -208,6 +208,8 @@ public class Claim implements CuboidLike {
     public PermissionContainer getPermissions(UUID player) {
         if (groups.containsKey(player)) {
             String group = groups.get(player);
+            if (group.equals(OWNER_GROUP))
+                return ClaimStorage.ownerPermissions;
             if (groupPermissions.containsKey(group))
                 return groupPermissions.get(group);
             else
@@ -303,10 +305,10 @@ public class Claim implements CuboidLike {
             PermissionContainer perms = new PermissionContainer(entry.getValue().getAsJsonObject())
                     .setParent(permissions);
             if (entry.getKey().equals(OWNER_GROUP)) {
-                if(perms.updateMissing(ClaimStorage.ownerPermissions))
+                if (perms.updateMissing(ClaimStorage.ownerPermissions))
                     markDirty();
             } else {
-                if(perms.updateMissing(ClaimStorage.defaultPermissions))
+                if (perms.updateMissing(ClaimStorage.defaultPermissions))
                     markDirty();
             }
             groupPermissions.put(entry.getKey(), perms);
@@ -330,6 +332,8 @@ public class Claim implements CuboidLike {
     public PermissionContainer getGroup(String group) {
         if (group.equals(DEFAULT_GROUP))
             return permissions;
+        if (group.equals(OWNER_GROUP))
+            return ClaimStorage.ownerPermissions;
         if (!groupPermissions.containsKey(group))
             return null;
         return groupPermissions.get(group);
@@ -367,9 +371,15 @@ public class Claim implements CuboidLike {
         return pos2;
     }
 
+    public Cuboid getCuboid() {
+        return new Cuboid(pos1, pos2);
+    }
+
     public PermissionState getPermission(String group, ClaimPermission permission) {
         if (group.equals(DEFAULT_GROUP))
             return permissions.get(permission);
+        if (group.equals(OWNER_GROUP))
+            return ClaimStorage.ownerPermissions.get(permission);
         if (!groupPermissions.containsKey(group))
             throw new IllegalArgumentException("Unknown group: \"" + group + "\"");
         return groupPermissions.get(group).get(permission);
@@ -378,6 +388,8 @@ public class Claim implements CuboidLike {
     public PermissionContainer getPermissions(String group) {
         if (group.equals(DEFAULT_GROUP))
             return permissions;
+        if (group.equals(OWNER_GROUP))
+            return ClaimStorage.ownerPermissions;
         return groupPermissions.get(group);
     }
 
@@ -392,5 +404,11 @@ public class Claim implements CuboidLike {
 
     public UUID getOwner() {
         return owner;
+    }
+
+    public void updateSize(Cuboid cuboid) {
+        pos1 = new Vector3i(cuboid.min);
+        pos2 = new Vector3i(cuboid.max);
+        markDirty();
     }
 }

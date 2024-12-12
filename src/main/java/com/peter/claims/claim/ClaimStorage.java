@@ -21,16 +21,14 @@ import com.google.gson.internal.Streams;
 import com.google.gson.stream.JsonWriter;
 import com.peter.claims.Claims;
 import com.peter.claims.Cuboid;
+import com.peter.claims.command.ClaimCommands;
 
 import static com.peter.claims.permission.ClaimPermissions.*;
 
 import com.peter.claims.permission.ClaimPermission;
 import com.peter.claims.permission.PermissionContainer;
-import com.peter.claims.permission.PermissionState;
-
 import net.minecraft.entity.player.PlayerEntity;
 import net.minecraft.server.MinecraftServer;
-import net.minecraft.util.Identifier;
 import net.minecraft.util.WorldSavePath;
 import net.minecraft.util.math.BlockPos;
 import net.minecraft.world.dimension.DimensionType;
@@ -42,16 +40,15 @@ public class ClaimStorage {
     public static boolean dirty = false;
 
     public static PermissionContainer defaultPermissions = new PermissionContainer();
-    public static PermissionContainer ownerPermissions = new PermissionContainer();
-
+    public static PermissionContainer ownerPermissions = new PermissionContainer().defaultAllowed();
     public static PermissionContainer globalPermissions = new PermissionContainer().defaultAllowed();
 
     public static final WorldSavePath CLAIM_SAVE_PATH = new WorldSavePath("claims");
 
     static {
-        for (Entry<Identifier, ClaimPermission> entry : PERMISSIONS.entrySet()) {
-            defaultPermissions.setPerm(entry.getKey(), entry.getValue().defaultState);
-            ownerPermissions.setPerm(entry.getKey(), PermissionState.ALLOWED);
+        for (ClaimPermission perm : PERMISSIONS.values()) {
+            defaultPermissions.setPerm(perm.id, perm.defaultState);
+            globalPermissions.setPerm(perm.id, perm.globalState);
         }
     }
 
@@ -111,7 +108,8 @@ public class ClaimStorage {
     }
 
     public static void remove(UUID uuid) {
-        claims.remove(uuid);
+        Claim claim = claims.remove(uuid);
+        ClaimCommands.removeClaimDisplay(claim);
         markDirty();
     }
 
@@ -210,9 +208,26 @@ public class ClaimStorage {
      * @return If the cuboid is outside of all claims
      */
     public static boolean verifyArea(Cuboid cuboid) {
-        
-
         for (Claim claim : claims.values()) {
+            if (cuboid.overlaps(claim))
+                return false;
+
+        }
+        return true;
+    }
+    
+    /**
+     * Verify if a given pair of positions is OUTSIDE of all claims
+     * 
+     * @param blockPos
+     * @param blockPos2
+     * @param exclude Claim to exclude from check
+     * @return If the cuboid is outside of all claims
+     */
+    public static boolean verifyArea(Cuboid cuboid, Claim exclude) {
+        for (Claim claim : claims.values()) {
+            if (claim.claimId == exclude.claimId)
+                continue;
             if (cuboid.overlaps(claim))
                 return false;
             

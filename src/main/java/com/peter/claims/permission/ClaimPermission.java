@@ -16,28 +16,34 @@ public class ClaimPermission {
     public final String name;
 
     public final PermissionState defaultState;
+    public final PermissionState globalState;
 
-    public ClaimPermission(Identifier id, Item icon, String name, PermissionState defaultState) {
+    public ClaimPermission(Identifier id, Item icon, String name, PermissionState defaultState, PermissionState globalState) {
         this.id = id;
         this.icon = icon;
         this.name = name;
         this.defaultState = defaultState;
+        this.globalState = globalState;
+    }
+
+    public ClaimPermission(String id, Item icon, String name, PermissionState defaultState, PermissionState globalState) {
+        this(Claims.id(id), icon, name, defaultState, globalState);
     }
 
     public ClaimPermission(String id, Item icon, String name, PermissionState defaultState) {
-        this(Claims.id(id), icon, name, defaultState);
+        this(Claims.id(id), icon, name, defaultState, PermissionState.ALLOWED);
     }
 
     public ClaimPermission(String id, Item icon, String name) {
-        this(Claims.id(id), icon, name, PermissionState.PROHIBITED);
+        this(Claims.id(id), icon, name, PermissionState.PROHIBITED, PermissionState.ALLOWED);
     }
 
     public ClaimPermission(String id, Item icon) {
-        this(Claims.id(id), icon, id, PermissionState.PROHIBITED);
+        this(Claims.id(id), icon, id, PermissionState.PROHIBITED, PermissionState.ALLOWED);
     }
 
     public ClaimPermission(String id) {
-        this(Claims.id(id), Items.PAPER, id, PermissionState.PROHIBITED);
+        this(Claims.id(id), Items.PAPER, id, PermissionState.PROHIBITED, PermissionState.ALLOWED);
     }
 
     public ItemStack getItemStack() {

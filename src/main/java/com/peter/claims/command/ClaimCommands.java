@@ -1,6 +1,7 @@
 package com.peter.claims.command;
 
 import com.mojang.brigadier.CommandDispatcher;
+import com.mojang.brigadier.arguments.IntegerArgumentType;
 import com.mojang.brigadier.arguments.StringArgumentType;
 import com.mojang.brigadier.context.CommandContext;
 import com.mojang.brigadier.exceptions.CommandSyntaxException;
@@ -8,7 +9,9 @@ import com.peter.claims.Claims;
 import com.peter.claims.Cuboid;
 import com.peter.claims.claim.Claim;
 import com.peter.claims.claim.ClaimStorage;
+import com.peter.claims.display.ClaimDisplay;
 import com.peter.claims.gui.ClaimMenuScreenHandler;
+import com.peter.claims.permission.ClaimPermission;
 import com.peter.claims.permission.ClaimPermissions;
 import com.peter.claims.permission.PermissionContainer;
 import com.peter.claims.permission.PermissionState;
@@ -17,12 +20,14 @@ import net.minecraft.command.CommandRegistryAccess;
 import net.minecraft.command.argument.EntityArgumentType;
 import net.minecraft.server.command.CommandManager.RegistrationEnvironment;
 import net.minecraft.server.network.ServerPlayerEntity;
+import net.minecraft.server.world.ServerWorld;
 import net.minecraft.server.command.ServerCommandSource;
 import net.minecraft.text.Text;
 import net.minecraft.util.Identifier;
 import net.minecraft.util.hit.BlockHitResult;
 import net.minecraft.util.hit.HitResult;
 import net.minecraft.util.math.BlockPos;
+import net.minecraft.util.math.Direction;
 
 import static net.minecraft.server.command.CommandManager.*;
 
@@ -46,6 +51,7 @@ public class ClaimCommands {
                         .then(literal("pos2").executes(ClaimCommands::pos2))
                         .then(literal("create").executes(ClaimCommands::createClaim))
                         .then(literal("list").executes(ClaimCommands::list))
+                        .then(literal("display").executes(ClaimCommands::display))
                         .then(literal("name")
                                 .then(argument("claim", StringArgumentType.string())
                                         .then(argument("name", StringArgumentType.greedyString())
@@ -61,12 +67,17 @@ public class ClaimCommands {
                                 .then(argument("group", StringArgumentType.string())
                                         .then(argument("player", EntityArgumentType.players())
                                                 .executes(ClaimCommands::setGroup))))
+                        .then(literal("expand")
+                                .then(argument("amount", IntegerArgumentType.integer())
+                                        .executes(ClaimCommands::expand)))
+                        .then(literal("listPerms").executes(ClaimCommands::listPerms)
+                                .then(literal("default").executes(ClaimCommands::listPermsDefault)))
                         .then(argument("action", StringArgumentType.string()).executes(ClaimCommands::claim)));
     }
     
     private static int help(CommandContext<ServerCommandSource> context) {
         String rt = "Claims Commands:";
-        rt += "\n§a|§e help §r- Show this list";
+        rt += "\n§a|§e help [<§bcommand§e>] §r- Show this list";
         rt += "\n§a|§e pos1 §r- Select 1st position for claiming";
         rt += "\n§a|§e pos2 §r- Select 2nd position for claiming";
         rt += "\n§a|§e create §r- Create a new claim from selected position";
@@ -75,6 +86,9 @@ public class ClaimCommands {
         rt += "\n§a|§e perm <§bgroup§e> <§bpermission§e> <§bstate§e> §r- Set group permission";
         rt += "\n§a|§e group <§bgroup§e> <§bplayer§e> §r- Set player group";
         rt += "\n§a|§e name <§bclaim§e> <§bname§e> §r- Rename a claim";
+        rt += "\n§a|§e expand <§bamount§e> §r- Expand the claim";
+        rt += "\n§a|§e display §r- Display the claim in game";
+        rt += "\n§a|§e listPerms [§bdefault§e] §r- List all claim permissions";
         Text text = Text.of(rt);
         context.getSource().sendFeedback(() -> text, false);
 
@@ -129,6 +143,21 @@ public class ClaimCommands {
                 rt += "\n§a|§f Rename a claim";
                 rt += "\n§a|§b claim §f- Claim UUID §lOR§r§f `-` for current claim";
                 rt += "\n§a|§b name §f- Name for the claim";
+                break;
+            case "display":
+                rt += "display§f";
+                rt += "\n§a|§f Display the current claim in game using particles";
+                rt += "\n§a|§f Run again to hide the claim";
+                break;
+            case "expand":
+                rt += "expand <§bamount§e>§f";
+                rt += "\n§a|§f Expand (or shrink) the claim";
+                rt += "\n§a|§b amount §f- Distance in you facing direction to expand the claim";
+                break;
+            case "listPerms":
+                rt += "listPerms§f";
+                rt += "\n§a|§f List all claim permissions";
+                rt += "\n§a|§f default §f- If the default value should be shown";
                 break;
         
             default:
@@ -327,6 +356,7 @@ public class ClaimCommands {
     }
 
     private static int remove(CommandContext<ServerCommandSource> context) {
+        
         String claimId = StringArgumentType.getString(context, "claim");
 
         Claim claim;
@@ -462,9 +492,138 @@ public class ClaimCommands {
             pNames += p2.getNameForScoreboard();
         }
         String pNames2 = pNames;
-        
-        context.getSource().sendFeedback(() -> Text.literal("Players "+pNames2+" added to group "+group), false);
 
+        context.getSource().sendFeedback(() -> Text.literal("Players " + pNames2 + " added to group " + group), false);
+
+        return 1;
+    }
+    
+    private static HashMap<UUID, HashMap<UUID, ClaimDisplay>> claimDisplays = new HashMap<>();
+
+    private static int display(CommandContext<ServerCommandSource> context) {
+        // String claimId = StringArgumentType.getString(context, "claim");
+
+        Claim claim;
+        // if (claimId.equals("-")) {
+        if (!context.getSource().isExecutedByPlayer()) {
+            context.getSource().sendError(Text.literal("Command must be executed by a player"));
+            return -1;
+        }
+        ServerPlayerEntity player = context.getSource().getPlayer();
+
+        claim = ClaimStorage.getClaim(player.getBlockPos());
+        if (claim == null) {
+            context.getSource().sendError(Text.literal("Must be standing in claim to use `-` selector"));
+            return -1;
+        }
+        // } else {
+        //     UUID claimUUID;
+        //     try {
+        //         claimUUID = UUID.fromString(claimId);
+        //     } catch (IllegalArgumentException e) {
+        //         context.getSource().sendError(Text.literal("Claim Id must be a UUID"));
+        //         return -1;
+        //     }
+        //     claim = ClaimStorage.getClaim(claimUUID);
+        //     if (claim == null) {
+        //         context.getSource().sendError(Text.literal("No claim with UUID `" + claimId + "` exists"));
+        //         return -1;
+        //     }
+        // }
+
+        UUID playerUuid = player.getUuid();
+        UUID claimUuid = claim.claimId;
+        if (!claimDisplays.containsKey(player.getUuid())) {
+            claimDisplays.put(playerUuid, new HashMap<>());
+        }
+        HashMap<UUID, ClaimDisplay> playerDisplays = claimDisplays.get(playerUuid);
+        if (!playerDisplays.containsKey(claimUuid)) {
+            ClaimDisplay display = new ClaimDisplay(claim, (ServerWorld) player.getWorld(),
+                    (ServerPlayerEntity) player);
+            playerDisplays.put(claimUuid, display);
+
+            context.getSource().sendFeedback(() -> Text.literal("Claim displayed"), false);
+        } else {
+            playerDisplays.remove(claimUuid);
+            context.getSource().sendFeedback(() -> Text.literal("Claim hidden"), false);
+        }
+
+        return 1;
+    }
+    
+    public static void tickDisplays(ServerWorld world) {
+        for (HashMap<UUID, ClaimDisplay> playerDisplays : claimDisplays.values()) {
+            for (ClaimDisplay display : playerDisplays.values()) {
+                display.displayTick(world);
+            }
+        }
+    }
+
+    public static void removeClaimDisplay(Claim claim) {
+        for (HashMap<UUID, ClaimDisplay> playerDisplays : claimDisplays.values()) {
+            playerDisplays.remove(claim.claimId);
+        }
+    }
+
+    private static int expand(CommandContext<ServerCommandSource> context) {
+        if (!context.getSource().isExecutedByPlayer()) {
+            context.getSource().sendError(Text.literal("Command must be executed by a player"));
+            return -1;
+        }
+        ServerPlayerEntity player = context.getSource().getPlayer();
+
+        Claim claim = ClaimStorage.getClaim(player.getBlockPos());
+        if (claim == null) {
+            context.getSource().sendError(Text.literal("Must be standing in claim to use `-` selector"));
+            return -1;
+        }
+
+        int amount = IntegerArgumentType.getInteger(context, "amount");
+
+        Direction facing = player.getFacing();
+
+        Cuboid cuboid = claim.getCuboid();
+        switch (facing) {
+            case UP -> cuboid.max.y += amount;
+            case DOWN -> cuboid.min.y -= amount;
+            case SOUTH -> cuboid.max.z += amount;
+            case NORTH -> cuboid.min.z -= amount;
+            case EAST -> cuboid.max.x += amount;
+            case WEST -> cuboid.min.x -= amount;
+        }
+
+        if (!ClaimStorage.verifyArea(cuboid, claim)) {
+            context.getSource().sendError(Text.literal("Claim can not expand into existing claim"));
+            return -1;
+        }
+        claim.updateSize(cuboid);
+
+        return 1;
+    }
+    
+    public static int listPerms(CommandContext<ServerCommandSource> context) {
+        String rt = "Claims Permissions:";
+        for (ClaimPermission permissions : ClaimPermissions.PERMISSIONS.values()) {
+            rt += "\n§a|§e " + permissions.name + " §f[§b" + permissions.id + "§f]";
+        }
+        Text text = Text.of(rt);
+        context.getSource().sendFeedback(() -> text, false);
+        return 1;
+    }
+
+    public static int listPermsDefault(CommandContext<ServerCommandSource> context) {
+        String rt = "Claims Permissions:";
+        for (ClaimPermission permissions : ClaimPermissions.PERMISSIONS.values()) {
+            rt += "\n§a|§e " + permissions.name + " §f[§b" + permissions.id + "§f]";
+            rt += "\n§a|§f   Default:";
+            switch (permissions.defaultState) {
+                case ALLOWED -> rt += "§a ALLOWED";
+                case PROHIBITED -> rt += "§c PROHIBITED";
+                case DEFAULT -> rt += "§7 DEFAULT";
+            }
+        }
+        Text text = Text.of(rt);
+        context.getSource().sendFeedback(() -> text, false);
         return 1;
     }
 }
