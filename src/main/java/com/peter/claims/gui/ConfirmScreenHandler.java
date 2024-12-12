@@ -7,6 +7,7 @@ import net.minecraft.screen.NamedScreenHandlerFactory;
 import net.minecraft.screen.ScreenHandler;
 import net.minecraft.server.network.ServerPlayerEntity;
 import net.minecraft.text.Text;
+import net.minecraft.util.Formatting;
 
 public class ConfirmScreenHandler extends ServerOnlyScreenHandler {
 
@@ -18,12 +19,12 @@ public class ConfirmScreenHandler extends ServerOnlyScreenHandler {
         this.cancel = cancel;
         this.confirm = confirm;
 
-        inventory.items[3] = new ItemButton(Items.LIME_WOOL, "Confirm", (b, a) -> {
+        inventory.items[3] = new ItemButton(Items.LIME_WOOL, (b, a) -> {
             confirm.run();
-        });
-        inventory.items[5] = new ItemButton(Items.BARRIER, "Cancel", (b, a) -> {
+        }).setName(Text.of("Confirm").copy().formatted(Formatting.GREEN));
+        inventory.items[5] = new ItemButton(Items.BARRIER, (b, a) -> {
             cancel.run();
-        });
+        }).setName(Text.of("Cancel").copy().formatted(Formatting.RED));
     }
 
     public static void confirm(ServerPlayerEntity player, String name, Runnable confirm, Runnable cancel) {

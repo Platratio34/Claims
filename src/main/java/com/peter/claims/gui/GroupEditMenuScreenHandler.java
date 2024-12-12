@@ -72,8 +72,8 @@ public class GroupEditMenuScreenHandler extends ServerOnlyScreenHandler {
                     claim.setGroup(playerUUID, group);
                 }
                 openMenu(player, claim, group);
-            }, "", Text.of("Player Name"));
-        });
+            }, "", "Player Name");
+        }).setLore(Text.of("Click players to remove them").copy().formatted(Formatting.RED));
         
         inventory.items[8] = new ItemButton(new ItemStack(Items.BARRIER), "Back", (b, a) -> {
             GroupMenuScreenHandler.openMenu(player, claim);
@@ -85,7 +85,7 @@ public class GroupEditMenuScreenHandler extends ServerOnlyScreenHandler {
             ServerPlayerEntity p2 = playerManager.getPlayer(uuid);
             String pName = "";
             if (p2 == null) {
-                pName = "Unknown :(";
+                pName = "Unknown?";
                 PlayerData playerData = PlayerCache.getPlayer(uuid);
                 if (playerData != null) {
                     pName = playerData.username();

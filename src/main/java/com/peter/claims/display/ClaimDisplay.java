@@ -36,7 +36,7 @@ public class ClaimDisplay {
         Vector3i min = claim.getMin();
         Vector3i max = claim.getMax();
 
-        if (t % 8 == 0) {
+        if (t % 4 == 0) {
 
             BlockPos playerPos = player.getBlockPos();
             Vector3i mid = min.add(max, new Vector3i()).div(2); // Get the center point of the claim
@@ -44,6 +44,7 @@ public class ClaimDisplay {
             if (mid.distance(playerPos.getX(), playerPos.getY(), playerPos.getZ()) > radius + 32) { // If we are far enough from it, don't even bother trying to show it
                 return;
             }
+            boolean draw1 = t % 8 == 4;
 
             int s = t / 8;
 
@@ -51,26 +52,36 @@ public class ClaimDisplay {
                 for (int y = min.y; y <= max.y; y++) {
                     for (int z = min.z; z <= max.z; z++) {
                         if ((x == min.x || x == max.x) && (y == min.y || y == max.y) && (z == min.z || z == max.z)) {
-                            drawParticle(CORNER_PARTICLE, x, y, z, 1);
+                            if (draw1)
+                                drawParticle(CORNER_PARTICLE, x, y, z, 1);
                         } else if ((x == min.x || x == max.x) && (y == min.y || y == max.y)) {
-                            drawParticle(EDGE_PARTICLE, x, y, z, 1);
+                            if (draw1)
+                                drawParticle(EDGE_PARTICLE, x, y, z, 1);
                         } else if ((y == min.y || y == max.y) && (z == min.z || z == max.z)) {
-                            drawParticle(EDGE_PARTICLE, x, y, z, 1);
+                            if (draw1)
+                                drawParticle(EDGE_PARTICLE, x, y, z, 1);
                         } else if ((x == min.x || x == max.x) && (z == min.z || z == max.z)) {
-                            drawParticle(EDGE_PARTICLE, x, y, z, 1);
+                            if (draw1)
+                                drawParticle(EDGE_PARTICLE, x, y, z, 1);
                         } else if (x == min.x || x == max.x) {
                             int i = y + z + s;
-                            if (i % 8 == 0) {
+                            if (draw1 && i % 8 == 0) {
+                                drawParticle(FACE_PARTICLE, x, y, z, 1);
+                            } else if (!draw1 && (i % 8 == 1 || i % 8 == -1)) {
                                 drawParticle(FACE_PARTICLE, x, y, z, 1);
                             }
                         } else if (y == min.y || y == max.y) {
                             int i = x + z + s;
-                            if (i % 8 == 0) {
+                            if (draw1 && i % 8 == 0) {
+                                drawParticle(FACE_PARTICLE, x, y, z, 1);
+                            } else if (!draw1 && (i % 8 == 1 || i % 8 == -1)) {
                                 drawParticle(FACE_PARTICLE, x, y, z, 1);
                             }
                         } else if (z == min.z || z == max.z) {
                             int i = x + y + s;
-                            if (i % 8 == 0) {
+                            if (draw1 && i % 8 == 0) {
+                                drawParticle(FACE_PARTICLE, x, y, z, 1);
+                            } else if (!draw1 && (i % 8 == 1 || i % 8 == -1)) {
                                 drawParticle(FACE_PARTICLE, x, y, z, 1);
                             }
                         }
@@ -81,6 +92,9 @@ public class ClaimDisplay {
     }
     
     protected void drawParticle(SimpleParticleType type, int x, int y, int z, int count) {
+        world.spawnParticles(player, type, false, x + 0.5d, y + 0.5d, z + 0.5d, count, 0, 0, 0, 0);
+    }
+    protected void drawParticle(SimpleParticleType type, double x, double y, double z, int count) {
         world.spawnParticles(player, type, false, x + 0.5d, y + 0.5d, z + 0.5d, count, 0, 0, 0, 0);
     }
 }

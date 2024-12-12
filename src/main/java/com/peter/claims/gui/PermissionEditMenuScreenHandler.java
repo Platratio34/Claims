@@ -87,6 +87,7 @@ public class PermissionEditMenuScreenHandler extends ServerOnlyScreenHandler {
         ItemButton button = new ItemButton(permission.getItemStack(state), (b, a) -> {
             togglePermission(a, permission, b);
         });
+        button.setLore(permission.id.toString());
         return button;
     }
 }

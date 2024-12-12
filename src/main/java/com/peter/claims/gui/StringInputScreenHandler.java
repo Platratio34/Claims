@@ -28,6 +28,10 @@ public class StringInputScreenHandler extends AnvilScreenHandler {
         input.setStack(0, s);
     }
 
+    public static void getString(ServerPlayerEntity player, BiConsumer<String, StringInputScreenHandler> resConsumer, String cVal, String name) {
+        getString(player, resConsumer, cVal, Text.of(name));
+    }
+
     public static void getString(ServerPlayerEntity player, BiConsumer<String, StringInputScreenHandler> resConsumer, String cVal, Text name) {
         NamedScreenHandlerFactory fac = new NamedScreenHandlerFactory() {
             @Override

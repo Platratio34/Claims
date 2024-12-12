@@ -23,10 +23,6 @@ public class GroupPermissionsMenuScreenHandler extends ServerOnlyScreenHandler {
             PermissionEditMenuScreenHandler.openMenu(player, claim, "default");
         });
 
-        inventory.items[1] = new ItemButton(new ItemStack(Items.BOOK), "Owner", (b, a) -> {
-            PermissionEditMenuScreenHandler.openMenu(player, claim, "Owner");
-        });
-
         inventory.items[8] = new ItemButton(new ItemStack(Items.BARRIER), "Back", (b, a) -> {
             ClaimMenuScreenHandler.openClaimMenu(player, claim);
         });
